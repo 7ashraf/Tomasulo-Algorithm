@@ -1,6 +1,7 @@
 package main;
 
 import java.util.HashMap;
+import java.util.Random;
 
 //RegisterFile.java
 public class RegisterFile {
@@ -54,7 +55,6 @@ public class RegisterFile {
  }
 
 public boolean isFresh(int register) {
-	// TODO Auto-generated method stub
 	return registers.get(register).hold == 0;
 }
 
@@ -66,4 +66,16 @@ public void holdRegister(int r, int tag) {
 public String toString() {
 	return "RegisterFile [registers=" + registers + "]";
 }
+
+
+public static int generateRandomNumber() {
+        Random random = new Random();
+        // Generate a random integer between 1 (inclusive) and 11 (exclusive)
+        return random.nextInt(10) + 1;
+    }
+
+
+
+
+
 }

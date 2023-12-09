@@ -9,8 +9,8 @@ public class ReservationStation {
 	
  private int cycle; // Cycle in which the instruction entered the reservation station
 // private Instruction instruction; // The instruction in the reservation station
- private int[] sourceOperands; // Index of source registers
- private int destinationOperand; // Index of the destination register
+ private int[] sourceOperands; // Values of source registers
+ private int destinationOperand; // Value of the destination register
  public boolean busy; // Flag indicating whether the reservation station is busy
  private RegisterFile registerFile; // Reference to the RegisterFile
 // private int size; // Add a size field
@@ -18,13 +18,14 @@ public class ReservationStation {
  public boolean waiting = false;
  public String[] qSourceOperands;
  public String operation;
+ public String type;
  public int A;
  public Instruction instructionReference;
  public int remainingCycles;
  public int tag;
+ public int result;
  
- 
- public ReservationStation(RegisterFile registerFile, String operation, int tag) {
+ public ReservationStation(RegisterFile registerFile, String type, int tag) {
      // Initialization
      this.cycle = -1; // Not in use initially
 //     this.instruction = null;
@@ -34,7 +35,7 @@ public class ReservationStation {
      this.registerFile = registerFile;
 //     this.instructions = new LinkedList<>();
      this.qSourceOperands = new String[2];
-     this.operation = operation;
+     this.type = type;
      this.tag = tag;
 
  }
@@ -56,16 +57,20 @@ public class ReservationStation {
          // Issue the instruction and update the reservation station state
          busy = true;
          String operation = instruction.getOperation();
+         this.operation = operation;
          
          destinationOperand = instruction.getDestinationRegister();
          
-         sourceOperands = instruction.getSourceRegisters();
-         if(checkWaiting(sourceOperands[0])) {
-        	 qSourceOperands[0] = sourceOperands[0] +"";
+         int[] sourceIndex = instruction.getSourceRegisters();
+         sourceOperands[0] = registerFile.getRegister(instruction.getSourceRegisters()[0]).value;
+         sourceOperands[1] = registerFile.getRegister(instruction.getSourceRegisters()[1]).value;
+
+         if(checkWaiting(sourceIndex[0])) {
+        	 qSourceOperands[0] = sourceIndex[0] +"";
         	 waiting = true;
          }
-         if(checkWaiting(sourceOperands[1])) {
-        	 qSourceOperands[1] = (sourceOperands[1]) + "";
+         if(checkWaiting(sourceIndex[1])) {
+        	 qSourceOperands[1] = (sourceIndex[1]) + "";
         	 waiting = true;
 
          }
@@ -73,9 +78,13 @@ public class ReservationStation {
          registerFile.holdRegister(destinationOperand, this.tag);
          
          if (operation.equals("ADD") || operation.equals("SUB")) {
-        	 remainingCycles =2;
+        	 remainingCycles =4;
+         }else if(operation.equals("MUL") || operation.equals("DIV")){
+            remainingCycles = 6;
+         }else{
+            remainingCycles = 1;
          }
-         remainingCycles =2;
+         
          //instructions.offer(instruction);
 //
 //         // Set up source and destination operands
@@ -114,7 +123,7 @@ public class ReservationStation {
 
          System.out.println("Instruction issued: " + instruction.getOperation() +
                  ", Dest: R" + destinationOperand +
-                 ", Sources: R" + sourceOperands[0] + ", R" + sourceOperands[1] + ", waiting" + waiting+
+                 ", Sources Value: " + sourceOperands[0] + ", " + sourceOperands[1] + ", waiting" + waiting+
                  ", Cycle: " + cycle);
      } else {
          System.out.println("Reservation station is full. Cannot issue instruction.");
@@ -126,7 +135,52 @@ public class ReservationStation {
  }
  
  
+ public void calculateResult() {
+    // Perform the operation based on the instruction type
+    // Adjust this based on your specific instruction set
+    System.out.println("Executing instruction: " +this);
+    switch (operation) {
+        case "ADD":
+            result = sourceOperands[0] + sourceOperands[1] ;
+            break;
+        case "SUB":
+            result = sourceOperands[0] - sourceOperands[1];
+            break;
+        case "MUL":
+            result = sourceOperands[0] * sourceOperands[1] ;
+            break;
+        case "DIV":
+            // Check for division by zero before performing the operation
+            if (sourceOperands[1] != 0) {
+                result = sourceOperands[0] / sourceOperands[1];
+            } else {
+                // Handle division by zero (throw an exception, set result to a special value, etc.)
+                throw new ArithmeticException("Division by zero");
+            }
+            break;
+        case "FADD":
+            // Assuming floating-point addition
+            // Adjust this based on your specific floating-point format
+            float floatResult = Float.intBitsToFloat(sourceOperands[0]) +
+                                Float.intBitsToFloat(sourceOperands[1]);
+            result = Float.floatToIntBits(floatResult);
+            break;
+        // Add cases for other operations (e.g., FDIV, FMUL, etc.)
+        case "LD":
+        //set destination register with source address with is a register 
+        //TODO use cache as address
+        registerFile.writeRegister(destinationOperand,sourceOperands[0], null);
+        break;
+        case "SD":
+        //store value sdValue in register indec
+       registerFile.writeRegister(destinationOperand, A, null);
 
+        break;
+        default:
+            // Handle unknown operation or throw an exception
+            throw new UnsupportedOperationException("Unsupported operation: " + operation);
+    }
+}
      
  
 

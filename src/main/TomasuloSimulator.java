@@ -23,7 +23,7 @@ public class TomasuloSimulator {
  private int storeLatency;
  private int branchLatency;
  public int addSubStationsCount = 3;
- public int mulDivStationsCount = 3;
+ public int mulDivStationsCount = 2;
  public int lSStaionsCount =3;
 
  public TomasuloSimulator(int numRegisters, List<ReservationStation> reservationStations, List<Instruction> instructions) {
@@ -66,6 +66,7 @@ public class TomasuloSimulator {
         	 //issue ins
              // Issue the instruction to the reservation station
              if (freeStation != null) {
+                
                  freeStation.issue(instruction, cycle);
                  instruction.setState(0);
                  freeStation.instructionReference.setState(0);
@@ -94,7 +95,9 @@ public class TomasuloSimulator {
 			 if(station.remainingCycles > 0) {
 				 station.remainingCycles --;
 			 }else {
-				 station.instructionReference.calculateResult();
+				 station.calculateResult();
+                 //TODO should write to  bus and bus notifies then all waiting elemtns on tag should take
+                 station.instructionReference.setResult(station.result);
 				 station.instructionReference.setState(2);
 			 }
 			
@@ -102,10 +105,11 @@ public class TomasuloSimulator {
 			 // write back on this cycle and remove instruction and publish results to bus 
 			 // instruction is completed
 		 }else if(station.waiting == false && station.instructionReference.getState() == 2) {
+            System.out.println("Writing back Instruction " + station.instructionReference);
 			 //store in destination register
 			 int destinationRegister = station.instructionReference.getDestinationRegister();
 			 int result = station.instructionReference.getResult();
-
+            if(!station.type.equals("lS"))
 			 registerFile.setRegister(destinationRegister, result);
 			 registerFile.getRegister(destinationRegister).hold =0;
 			 // remove instruction 
@@ -119,14 +123,17 @@ public class TomasuloSimulator {
 					 
 					 if(wbStation.qSourceOperands[0]!=null) {
 					 if(wbStation.qSourceOperands[0].equals(destinationRegister+"")) {
-                        registerFile.writeRegister(wbStation.getSourceOperands()[0], result, station);
+                        wbStation.getSourceOperands()[0] = result;
+                        //registerFile.writeRegister(wbStation.getSourceOperands()[0], result, station);
 						 wbStation.waiting = false;
 						 
 					 }
 					 }
 					 if(wbStation.qSourceOperands[1]!=null) {
 					 if(wbStation.qSourceOperands[1].equals(destinationRegister+"")) {
-                         registerFile.writeRegister(wbStation.getSourceOperands()[1], result, station);
+                        wbStation.getSourceOperands()[1] = result;
+
+                         //registerFile.writeRegister(wbStation.getSourceOperands()[1], result, station);
 
 						 wbStation.waiting = false;
 
@@ -223,15 +230,15 @@ private void removeInstruction(ReservationStation station) {
      // Find and return a free reservation station
      for (ReservationStation reservationStation : reservationStations) {
     	 if(operation.equals("ADD") || operation.equals("SUB")) {
-    		 if (!reservationStation.isBusy() && reservationStation.operation.equals("addSub")) {
+    		 if (!reservationStation.isBusy() && reservationStation.type.equals("addSub")) {
                  return reservationStation;
              }
     	 }else if(operation.equals("MUL") || operation.equals("DIV")) {
-    		 if (!reservationStation.isBusy() && reservationStation.operation.equals("mulDiv")) {
+    		 if (!reservationStation.isBusy() && reservationStation.type.equals("mulDiv")) {
                  return reservationStation;
              }
-    	 }else if(operation.equals("LD") || operation.equals("ST")) {
-    		 if (!reservationStation.isBusy() && reservationStation.operation.equals("lS")) {
+    	 }else if(operation.equals("LD") || operation.equals("SD")) {
+    		 if (!reservationStation.isBusy() && reservationStation.type.equals("lS")) {
                  return reservationStation;
              }
     		 
@@ -250,8 +257,8 @@ private void removeInstruction(ReservationStation station) {
 	                "Busy: " + reservationStation.isBusy() +
 	                ", Operation: " + reservationStation.operation +
 	                ", Dest: R" + reservationStation.getDestinationOperand() +
-	                ", Sources: R" + reservationStation.getSourceOperands()[0] +
-	                ", R" + reservationStation.getSourceOperands()[1] +
+	                ", Sources Values: " + reservationStation.getSourceOperands()[0] +
+	                ", " + reservationStation.getSourceOperands()[1] +
             ", waiting" + reservationStation.waiting);
 ;
 	    }
@@ -268,7 +275,7 @@ private void removeInstruction(ReservationStation station) {
      // Set up the simulator parameters
      System.out.print("Enter the number of registers: ");
      //int numRegisters = scanner.nextInt();
-     int numRegisters = 10;
+     int numRegisters = 15;
 
 
      System.out.print("Enter the number of reservation stations: ");
@@ -363,23 +370,50 @@ private void removeInstruction(ReservationStation station) {
      }
  }
  
- private Instruction parseInstruction(String input) {
-     // Parse the input string and create an Instruction object
-     // Adjust this based on your specific instruction format
-     String[] parts = input.split("\\s+");
-     System.out.println(input);
-     System.out.println(parts[0] + parts[1]);
-     String operation = parts[0];
-     int destRegister = Integer.parseInt(parts[1].substring(1)); // Assuming register format like R1, R2, etc.
-     int[] sourceRegisters = new int[2];
-     //sourceRegisters[0] = Integer.parseInt(parts[0 + 2].substring(1));
-     for (int i = 0; i < sourceRegisters.length; i++) {
-         sourceRegisters[i] = Integer.parseInt(parts[i + 2].substring(1));
-     }
-     //int immediateValue = Integer.parseInt(parts[parts.length - 1]);
+//  private Instruction parseInstruction(String input) {
+//      // Parse the input string and create an Instruction object
+//      // Adjust this based on your specific instruction format
+//      String[] parts = input.split("\\s+");
+//      System.out.println(input);
+//      System.out.println(parts[0] + parts[1]);
+//      String operation = parts[0];
+//      int destRegister = Integer.parseInt(parts[1].substring(1)); // Assuming register format like R1, R2, etc.
+//      int[] sourceRegisters = new int[2];
+//      //sourceRegisters[0] = Integer.parseInt(parts[0 + 2].substring(1));
+//      for (int i = 0; i < sourceRegisters.length; i++) {
+//          sourceRegisters[i] = Integer.parseInt(parts[i + 2].substring(1));
+//      }
+//      //int immediateValue = Integer.parseInt(parts[parts.length - 1]);
 
-     return new Instruction(operation, destRegister, sourceRegisters, 0, 2, this.registerFile);
- }
+//      return new Instruction(operation, destRegister, sourceRegisters, 0, 2, this.registerFile);
+//  }
+
+ private Instruction parseInstruction(String input) {
+    // Parse the input string and create an Instruction object
+    // Adjust this based on your specific instruction format
+
+    String[] parts = input.split("\\s+");
+    System.out.println(input);
+
+    String operation = parts[0];
+    int destRegister = Integer.parseInt(parts[1].substring(1)); // Assuming register format like R1, R2, etc.
+    int[] sourceRegisters = new int[2];
+
+    // Check if it's an LD or SD instruction
+    if (operation.equals("LD") || operation.equals("SD")) {
+        // For LD and SD instructions, the destination address is in the format "100"
+        sourceRegisters[0] = Integer.parseInt(parts[2]); 
+        int destinationAddress = Integer.parseInt(parts[2]);
+        return new Instruction(operation, destRegister, sourceRegisters, destinationAddress, 2, this.registerFile);
+    } else {
+        // For other instructions
+        for (int i = 0; i < sourceRegisters.length; i++) {
+            sourceRegisters[i] = Integer.parseInt(parts[i + 2].substring(1));
+        }
+        return new Instruction(operation, destRegister, sourceRegisters, 0, 2, this.registerFile);
+    }
+}
+
 
  private void loadInstructionsFromFile(String filePath) {
      try {

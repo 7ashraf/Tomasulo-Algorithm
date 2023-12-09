@@ -13,6 +13,7 @@ public class Instruction {
  private int state;
  public int latency;
  public RegisterFile registers;
+ public int sdValue;
 
  public Instruction(String operation, int destinationRegister, int[] sourceRegisters, int immediateValue, int latency, RegisterFile registers) {
      this.operation = operation;
@@ -65,6 +66,7 @@ public void setState(int state) {
  public void calculateResult() {
      // Perform the operation based on the instruction type
      // Adjust this based on your specific instruction set
+     System.out.println("Executing instruction: " +this);
      switch (operation) {
          case "ADD":
              result = registers.getRegister(sourceRegisters[0]).value + registers.getRegister(sourceRegisters[1]).value ;
@@ -92,6 +94,16 @@ public void setState(int state) {
              result = Float.floatToIntBits(floatResult);
              break;
          // Add cases for other operations (e.g., FDIV, FMUL, etc.)
+         case "LD":
+         //set destination register with source address with is a register 
+         //TODO use cache as address
+         registers.writeRegister(destinationRegister, registers.getRegister(sourceRegisters[0]).value, null);
+         break;
+         case "SD":
+         //store value sdValue in register indec
+        registers.writeRegister(destinationRegister, sdValue, null);
+
+         break;
          default:
              // Handle unknown operation or throw an exception
              throw new UnsupportedOperationException("Unsupported operation: " + operation);
@@ -100,5 +112,8 @@ public void setState(int state) {
 public int getState() {
 	// TODO Auto-generated method stub
 	return this.state;
+}
+public void setResult(int result2) {
+    this.result = result2;
 }
 }
