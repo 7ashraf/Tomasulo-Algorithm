@@ -25,6 +25,8 @@ public class TomasuloSimulator {
  public int addSubStationsCount = 3;
  public int mulDivStationsCount = 2;
  public int lSStaionsCount =3;
+ public static boolean isBranchWait=false;
+ public int PC=0;
 
  public TomasuloSimulator(int numRegisters, List<ReservationStation> reservationStations, List<Instruction> instructions) {
      this.registerFile = new RegisterFile(numRegisters);
@@ -41,7 +43,9 @@ public class TomasuloSimulator {
      while (!allInstructionsCompleted()) {
          // Issue instructions to reservation stations
          //issueInstructions();
+    	 if(!isBranchWait) {
     	 issueSingleInstruction();
+    	 }
 
          // Execute instructions in reservation stations
          //executeInstructions();
@@ -60,7 +64,9 @@ public class TomasuloSimulator {
          // Find a free reservation station
     	 String operation = instruction.getOperation();
          ReservationStation freeStation = findFreeReservationStation(operation);
-         
+         if(operation.equals("BNEZ")) {
+        	 isBranchWait=true;
+         }
          //find not issued instruction and issue it 
          if (instruction.getState() == -1) {
         	 //issue ins
@@ -229,7 +235,7 @@ private void removeInstruction(ReservationStation station) {
  private ReservationStation findFreeReservationStation(String operation) {
      // Find and return a free reservation station
      for (ReservationStation reservationStation : reservationStations) {
-    	 if(operation.equals("ADD") || operation.equals("SUB")) {
+    	 if(operation.equals("ADD") || operation.equals("SUB") || operation.equals("BNEZ")) {
     		 if (!reservationStation.isBusy() && reservationStation.type.equals("addSub")) {
                  return reservationStation;
              }
@@ -399,18 +405,24 @@ private void removeInstruction(ReservationStation station) {
     int destRegister = Integer.parseInt(parts[1].substring(1)); // Assuming register format like R1, R2, etc.
     int[] sourceRegisters = new int[2];
 
+    if(operation.equals("BNEZ")) {
+    	sourceRegisters[0]=destRegister;
+    	String label=parts[2];
+    	return new Instruction(operation, 0, sourceRegisters, 0, 1,label, this.registerFile);
+    }
     // Check if it's an LD or SD instruction
+    else
     if (operation.equals("LD") || operation.equals("SD")) {
         // For LD and SD instructions, the destination address is in the format "100"
         sourceRegisters[0] = Integer.parseInt(parts[2]); 
         int destinationAddress = Integer.parseInt(parts[2]);
-        return new Instruction(operation, destRegister, sourceRegisters, destinationAddress, 2, this.registerFile);
+        return new Instruction(operation, destRegister, sourceRegisters, destinationAddress, 2,"", this.registerFile);
     } else {
         // For other instructions
         for (int i = 0; i < sourceRegisters.length; i++) {
             sourceRegisters[i] = Integer.parseInt(parts[i + 2].substring(1));
         }
-        return new Instruction(operation, destRegister, sourceRegisters, 0, 2, this.registerFile);
+        return new Instruction(operation, destRegister, sourceRegisters, 0, 2, "",this.registerFile);
     }
 }
 
