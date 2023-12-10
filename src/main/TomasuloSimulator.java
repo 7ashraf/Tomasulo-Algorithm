@@ -11,7 +11,7 @@ import java.util.Scanner;
 public class TomasuloSimulator {
  private RegisterFile registerFile;
  private List<ReservationStation> reservationStations;
- 
+ public DisplayStation display;
  
  private List<Instruction> instructions;
  private int cycle;
@@ -25,16 +25,20 @@ public class TomasuloSimulator {
  public int addSubStationsCount = 3;
  public int mulDivStationsCount = 2;
  public int lSStaionsCount =3;
+private Memory memory;
 
  public TomasuloSimulator(int numRegisters, List<ReservationStation> reservationStations, List<Instruction> instructions) {
      this.registerFile = new RegisterFile(numRegisters);
      this.reservationStations = reservationStations;
      this.instructions = instructions;
      this.cycle = 0;
+
  }
  
  public TomasuloSimulator() {
      this.instructions = new ArrayList<>();
+     this.display = DisplayStation.getInstance();
+     memory = Memory.getInstance();
  }
 
  public void runSimulation() {
@@ -106,6 +110,7 @@ public class TomasuloSimulator {
 			 // instruction is completed
 		 }else if(station.waiting == false && station.instructionReference.getState() == 2) {
             System.out.println("Writing back Instruction " + station.instructionReference);
+            display.printWritingBackInstruction(station.instructionReference);
 			 //store in destination register
 			 int destinationRegister = station.instructionReference.getDestinationRegister();
 			 int result = station.instructionReference.getResult();
@@ -251,6 +256,9 @@ private void removeInstruction(ReservationStation station) {
 
  private void printSimulationState() {
 	    System.out.println("Cycle: " + cycle);
+        display.printRegisterFile(registerFile);
+        display.printReservationStations(reservationStations);
+        display.printMemory(memory);
 	    System.out.println("Reservation Stations:");
 	    for (ReservationStation reservationStation : reservationStations) {
 	        System.out.println("Station " + reservationStations.indexOf(reservationStation) + ": " +
