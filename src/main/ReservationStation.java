@@ -27,7 +27,7 @@ public class ReservationStation {
  public int tag;
  public int result;
  public boolean isBranchWait;
-
+public TomasuloSimulator sim = TomasuloSimulator.getInstance();
  
  public ReservationStation(RegisterFile registerFile, String type, int tag) {
      // Initialization
@@ -60,9 +60,12 @@ public class ReservationStation {
      // Check if the reservation station is not full before issuing an instruction
      if (true /*!isFull()*/) {
          // Issue the instruction and update the reservation station state
+        
          busy = true;
          String operation = instruction.getOperation();
          this.operation = operation;
+
+         
          
          destinationOperand = instruction.getDestinationRegister();
          
@@ -80,14 +83,15 @@ public class ReservationStation {
 
          }
          this.instructionReference = instruction;
-         registerFile.holdRegister(destinationOperand, this.tag);
+         if(!operation.equals("BNEZ"))
+            registerFile.holdRegister(destinationOperand, this.tag);
          
          if (operation.equals("ADD") || operation.equals("SUB")) {
-        	 remainingCycles =4;
+        	 remainingCycles =2;
          }else if(operation.equals("MUL") || operation.equals("DIV")){
-            remainingCycles = 6;
+            remainingCycles = 2;
          }else{
-            remainingCycles = 1;
+            remainingCycles = 2;
          }
          
          //instructions.offer(instruction);
@@ -186,10 +190,16 @@ public class ReservationStation {
         break;
         case "BNEZ":
         	if(sourceOperands[0]==0) {
+                //branch not taken
         		TomasuloSimulator.isBranchWait=false;
+                
         	}
         	else {
+                //branch is taken, re add the instructions in the loopInstructions to instructions queue
         		TomasuloSimulator.isBranchWait=false;
+                //TODO re add loop instructions
+                // make sure to add them in the correct index not at the end
+                sim.reAddLoopInstructions(this.instructionReference);
         	}
         	break;
         default:

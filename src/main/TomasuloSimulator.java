@@ -2,11 +2,18 @@ package main;
 
 //TomasuloSimulator.java
 import java.util.List;
+import java.util.Map;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.Scanner;
+import java.util.Set;
+
+import java.util.Iterator;
+import java.util.Collections;
+
 
 public class TomasuloSimulator {
  private RegisterFile registerFile;
@@ -14,6 +21,7 @@ public class TomasuloSimulator {
  public DisplayStation display;
  
  private List<Instruction> instructions;
+ public Hashtable <String, List<Instruction>> loopInstructions;
  private int cycle;
 
  private int addLatency;
@@ -32,7 +40,7 @@ private Memory memory;
  public TomasuloSimulator(int numRegisters, List<ReservationStation> reservationStations, List<Instruction> instructions) {
      this.registerFile = new RegisterFile(numRegisters);
      this.reservationStations = reservationStations;
-     this.instructions = instructions;
+     //this.instructions = instructions;
      this.cycle = 0;
 
  }
@@ -41,6 +49,7 @@ private Memory memory;
      this.instructions = new ArrayList<>();
      this.display = DisplayStation.getInstance();
      memory = Memory.getInstance();
+     this.loopInstructions = new Hashtable<>();
  }
 
  public void runSimulation() {
@@ -64,13 +73,13 @@ private Memory memory;
  }
  
  private void issueSingleInstruction() {
+          
+
      for (Instruction instruction : instructions) {
          // Find a free reservation station
     	 String operation = instruction.getOperation();
          ReservationStation freeStation = findFreeReservationStation(operation);
-         if(operation.equals("BNEZ")) {
-        	 isBranchWait=true;
-         }
+         
          //find not issued instruction and issue it 
          if (instruction.getState() == -1) {
         	 //issue ins
@@ -80,7 +89,12 @@ private Memory memory;
                  freeStation.issue(instruction, cycle);
                  instruction.setState(0);
                  freeStation.instructionReference.setState(0);
+                if(operation.equals("BNEZ")) {
+        	        isBranchWait=true;
+                }
                  return;
+             }else{
+                System.out.println("No available stations");
              }
          }
 
@@ -120,11 +134,15 @@ private Memory memory;
 			 //store in destination register
 			 int destinationRegister = station.instructionReference.getDestinationRegister();
 			 int result = station.instructionReference.getResult();
-            if(!station.type.equals("lS"))
+             if(station.type.equals("BNEZ")){
+
+             }
+            if(!station.type.equals("lS") && !station.type.equals("BNEZ"))
 			 registerFile.setRegister(destinationRegister, result);
-			 registerFile.getRegister(destinationRegister).hold =0;
+             if(registerFile.getRegister(destinationRegister).hold == station.tag )
+			    registerFile.getRegister(destinationRegister).hold =0;
 			 // remove instruction 
-			 removeInstruction(station);
+			 removeInstruction(station.instructionReference.label, station);
 			 
 			 //TODO check for instructions waiting on results
 			 // loop through reservation stations, if waiting is true, and waiting register is result set waiting false and update source registers
@@ -179,11 +197,32 @@ private Memory memory;
 //     }
  }
 
-private void removeInstruction(ReservationStation station) {
+private void removeInstruction(String _key, ReservationStation station) {
 	// TODO Auto-generated method stub
+    // Set<String> set = instructions.keySet();
+
+    //  for (String key : set) {
+    //     Instruction instruction = instructions.get(key);
+    //     if (instruction == station.instructionReference){
+    //         instructions.remove(key);
+    //     }
+    //  }
 	instructions.remove(station.instructionReference);
-    station.busy = false;
+        station.busy = false;
+        station.instructionReference.setState(3);
+        station.instructionReference.setCompleted(true);
     //TODO reservationStations.remove(station);
+
+        // Iterator<Map.Entry<String, Instruction>> iterator = instructions.entrySet().iterator();
+        // System.out.println("Iterator _-------------------------------------"+iterator);
+        // while (iterator.hasNext()) {
+        //     Map.Entry<String, Instruction> entry = iterator.next();
+        //     if (entry.getValue().equals(station.instructionReference)) {
+        //         iterator.remove();
+        //         System.out.println("Object removed successfully");
+        //         // Remove only the first occurrence, or continue to remove all occurrences
+        //     }
+        // }
     
 	
 }
@@ -229,7 +268,10 @@ private void removeInstruction(ReservationStation station) {
 // }
  private boolean allInstructionsCompleted() {
      // Check if all instructions have been completed
+        // Set<String> set = instructions.keySet();
+
      for (Instruction instruction : instructions) {
+         
          if (!instruction.isCompleted()) {
              return false;
          }
@@ -264,7 +306,7 @@ private void removeInstruction(ReservationStation station) {
 	    System.out.println("Cycle: " + cycle);
         display.printRegisterFile(registerFile);
         display.printReservationStations(reservationStations);
-        display.printMemory(memory);
+        //display.printMemory(memory);
 	    System.out.println("Reservation Stations:");
 	    for (ReservationStation reservationStation : reservationStations) {
 	        System.out.println("Station " + reservationStations.indexOf(reservationStation) + ": " +
@@ -378,9 +420,12 @@ private void removeInstruction(ReservationStation station) {
      // Load instructions from the user
      System.out.println("Enter MIPS instructions (one per line, type 'done' to finish):");
      String input;
+     int c =0;
+
      while (!(input = scanner.nextLine()).equalsIgnoreCase("done")) {
          Instruction instruction = parseInstruction(input);
          instructions.add(instruction);
+         //instructions.add(instruction);
      }
  }
  
@@ -407,9 +452,15 @@ private void removeInstruction(ReservationStation station) {
     // Adjust this based on your specific instruction format
 
     String[] parts = input.split("\\s+");
+
     System.out.println(input);
+    int c=0;
+
+    //handle loops here if a loop is found add the following instructions to a string then add all strings to loop - instructions hashtable 
+    // continue adding till branch instruction is found that means end of loop 
 
     String operation = parts[0];
+
     int destRegister = Integer.parseInt(parts[1].substring(1)); // Assuming register format like R1, R2, etc.
     int[] sourceRegisters = new int[2];
 
@@ -424,13 +475,13 @@ private void removeInstruction(ReservationStation station) {
         // For LD and SD instructions, the destination address is in the format "100"
         sourceRegisters[0] = Integer.parseInt(parts[2]); 
         int destinationAddress = Integer.parseInt(parts[2]);
-        return new Instruction(operation, destRegister, sourceRegisters, destinationAddress, 2,"", this.registerFile);
+        return new Instruction(operation, destRegister, sourceRegisters, destinationAddress, 2,c++ +"", this.registerFile);
     } else {
         // For other instructions
         for (int i = 0; i < sourceRegisters.length; i++) {
             sourceRegisters[i] = Integer.parseInt(parts[i + 2].substring(1));
         }
-        return new Instruction(operation, destRegister, sourceRegisters, 0, 2, "",this.registerFile);
+        return new Instruction(operation, destRegister, sourceRegisters, 0, 2, c++ +"",this.registerFile);
     }
 }
 
@@ -440,12 +491,54 @@ private void removeInstruction(ReservationStation station) {
     	 URL url = getClass().getResource("ins");
     	 File file = new File(url.getPath());
          Scanner fileScanner = new Scanner(file);
+         int c=0;
+         boolean addingLoop = false;
+         String loopTag = "";
+         List<Instruction> loopInstructionsList = new ArrayList<>();
 
          while (fileScanner.hasNextLine()) {
-             String line = fileScanner.nextLine();
+            String line = fileScanner.nextLine();
+            String[] parts = line.split("\\s+");
 
-             Instruction instruction = parseInstruction(line);
-             instructions.add(instruction);
+             //handle loops here if a loop is found add the following instructions to a string then add all strings to loop - instructions hashtable 
+            // continue adding till branch instruction is found that means end of loop 
+            String operation = parts[0];
+            if(operation.contains(":")) {
+                //initialize list of instructions
+                
+                loopTag = operation;
+                addingLoop = true;
+                //skip to next instruction
+                continue;
+
+
+
+            }
+            //parse the instruction, then check if adding loop 
+            //if addingloop then add to loop instruction list
+            //if adding loop and bnez is found
+            //end adding loop
+            // add instruction list to loopInstruction with tag looptag
+            //reset variables
+            Instruction instruction = parseInstruction(line);
+            if(addingLoop && !instruction.getOperation().equals("BNEZ")){
+                loopInstructionsList.add(instruction);
+                //loop instructions should go into the instructions queue for the first cycle also
+                instructions.add(instruction);
+            }else if(addingLoop && instruction.getOperation().equals("BNEZ")){
+                //end adding loop
+                addingLoop = false;
+                this.loopInstructions.put(loopTag, new ArrayList<>(loopInstructionsList));
+                loopInstructionsList.clear();
+                //add bnez instruction to the instructions queue
+                instructions.add(instruction);
+            }else{
+                //normal instructions add them 
+                instructions.add(instruction);
+
+            }
+             
+            //  instructions.add(instruction);
          }
 
          fileScanner.close();
@@ -456,10 +549,33 @@ private void removeInstruction(ReservationStation station) {
  }
 
  public static void main(String[] args) {
-     TomasuloSimulator simulator = new TomasuloSimulator();
+     TomasuloSimulator simulator = getInstance();
      simulator.getUserInput();
      simulator.runSimulation();
  }
+ private static TomasuloSimulator instance;
+
+ public static TomasuloSimulator getInstance() {
+    if (instance == null) {
+        synchronized (TomasuloSimulator.class) {
+            if (instance == null) {
+                instance = new TomasuloSimulator();
+            }
+        }
+    }
+    return instance;
+}
+
+    public void reAddLoopInstructions(Instruction branchInstrcution) {
+        String tag = branchInstrcution.label;
+        int branchIndex = this.instructions.indexOf(branchInstrcution);
+        //add the loop instructions in the instruction queue 
+        //should add the instructions in the correct place not at the end of instructions queue
+        List<Instruction> instructions = loopInstructions.get(tag+":");
+        // add the instructions before the branch index
+        this.instructions.addAll(branchIndex, instructions);
+    
+    }
 }
 
 //TODO 
