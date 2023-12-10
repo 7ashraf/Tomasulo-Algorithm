@@ -25,12 +25,9 @@ public class TomasuloSimulator {
  public int addSubStationsCount = 3;
  public int mulDivStationsCount = 2;
  public int lSStaionsCount =3;
-<<<<<<< HEAD
  public static boolean isBranchWait=false;
  public int PC=0;
-=======
 private Memory memory;
->>>>>>> 5190a42 (ashraf)
 
  public TomasuloSimulator(int numRegisters, List<ReservationStation> reservationStations, List<Instruction> instructions) {
      this.registerFile = new RegisterFile(numRegisters);
