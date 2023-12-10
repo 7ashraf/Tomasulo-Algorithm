@@ -13,17 +13,15 @@ public class Instruction {
  private int state;
  public int latency;
  public RegisterFile registers;
- public String label;
  public int sdValue;
 
- public Instruction(String operation, int destinationRegister, int[] sourceRegisters, int immediateValue, int latency, String label,RegisterFile registers) {
+ public Instruction(String operation, int destinationRegister, int[] sourceRegisters, int immediateValue, int latency, RegisterFile registers) {
      this.operation = operation;
      this.destinationRegister = destinationRegister;
      this.sourceRegisters = sourceRegisters;
      this.immediateValue = immediateValue;
      this.state = -1;
      this.latency = latency;
-     this.label=label;
      this.registers = registers;
  }
  public int getResult() {
@@ -60,9 +58,6 @@ public void setState(int state) {
 
  public int getImmediateValue() {
      return immediateValue;
- }
- public String getLabel() {
-	 return label;
  }
  
  
