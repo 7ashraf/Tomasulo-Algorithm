@@ -24,8 +24,6 @@ public class ReservationStation {
  public int remainingCycles;
  public int tag;
  public int result;
- public boolean isBranchWait;
-
  
  public ReservationStation(RegisterFile registerFile, String type, int tag) {
      // Initialization
@@ -178,14 +176,6 @@ public class ReservationStation {
        registerFile.writeRegister(destinationOperand, A, null);
 
         break;
-        case "BNEZ":
-        	if(sourceOperands[0]==0) {
-        		TomasuloSimulator.isBranchWait=false;
-        	}
-        	else {
-        		TomasuloSimulator.isBranchWait=false;
-        	}
-        	break;
         default:
             // Handle unknown operation or throw an exception
             throw new UnsupportedOperationException("Unsupported operation: " + operation);
