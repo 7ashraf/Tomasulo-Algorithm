@@ -6,6 +6,8 @@ import java.util.Queue;
 
 //ReservationStation.java
 public class ReservationStation {
+
+    public DisplayStation display;
 	
  private int cycle; // Cycle in which the instruction entered the reservation station
 // private Instruction instruction; // The instruction in the reservation station
@@ -39,6 +41,7 @@ public class ReservationStation {
      this.qSourceOperands = new String[2];
      this.type = type;
      this.tag = tag;
+     this.display = DisplayStation.getInstance();
 
  }
 // public void setSize(int size) {
@@ -123,6 +126,8 @@ public class ReservationStation {
 //             // ...
 //         }
 
+
+        display.printIssuingInstruction(instruction);
          System.out.println("Instruction issued: " + instruction.getOperation() +
                  ", Dest: R" + destinationOperand +
                  ", Sources Value: " + sourceOperands[0] + ", " + sourceOperands[1] + ", waiting" + waiting+
@@ -141,6 +146,7 @@ public class ReservationStation {
     // Perform the operation based on the instruction type
     // Adjust this based on your specific instruction set
     System.out.println("Executing instruction: " +this);
+    display.printExecutingReservationStation(this);
     switch (operation) {
         case "ADD":
             result = sourceOperands[0] + sourceOperands[1] ;
