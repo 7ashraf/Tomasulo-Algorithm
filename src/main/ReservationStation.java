@@ -27,6 +27,7 @@ public class ReservationStation {
  public int tag;
  public int result;
  public boolean isBranchWait;
+ public Memory memory = Memory.getInstance();
 public TomasuloSimulator sim = TomasuloSimulator.getInstance();
  
  public ReservationStation(RegisterFile registerFile, String type, int tag) {
@@ -70,14 +71,18 @@ public TomasuloSimulator sim = TomasuloSimulator.getInstance();
          destinationOperand = instruction.getDestinationRegister();
          
          int[] sourceIndex = instruction.getSourceRegisters();
+         if(operation.equals("LD") || operation.equals("SD")){
+            sourceOperands[0] = memory.getData(instruction.getSourceRegisters()[0]);
+            this.A = memory.getData(instruction.getSourceRegisters()[0]);
+         }else{
          sourceOperands[0] = registerFile.getRegister(instruction.getSourceRegisters()[0]).value;
          sourceOperands[1] = registerFile.getRegister(instruction.getSourceRegisters()[1]).value;
-
-         if(checkWaiting(sourceIndex[0])) {
+         }
+         if(checkWaiting(sourceIndex[0])&& !(operation.equals("LD") || operation.equals("SD"))) {
         	 qSourceOperands[0] = sourceIndex[0] +"";
         	 waiting = true;
          }
-         if(checkWaiting(sourceIndex[1])) {
+         if(checkWaiting(sourceIndex[1])&& !(operation.equals("LD") || operation.equals("SD"))) {
         	 qSourceOperands[1] = (sourceIndex[1]) + "";
         	 waiting = true;
 
@@ -87,12 +92,16 @@ public TomasuloSimulator sim = TomasuloSimulator.getInstance();
             registerFile.holdRegister(destinationOperand, this.tag);
          
          if (operation.equals("ADD") || operation.equals("SUB")) {
-        	 remainingCycles =2;
+        	 remainingCycles =sim.addLatency;
          }else if(operation.equals("MUL") || operation.equals("DIV")){
-            remainingCycles = 2;
-         }else{
-            remainingCycles = 2;
-         }
+            remainingCycles = sim.mulLatency;
+         }else if (operation.equals("LS") || operation.equals("SD")) {
+        	 remainingCycles =sim.loadLatency;
+           
+
+         }  else{
+            remainingCycles = 1;
+             }
          
          //instructions.offer(instruction);
 //
@@ -132,10 +141,10 @@ public TomasuloSimulator sim = TomasuloSimulator.getInstance();
 
 
         display.printIssuingInstruction(instruction);
-         System.out.println("Instruction issued: " + instruction.getOperation() +
-                 ", Dest: R" + destinationOperand +
-                 ", Sources Value: " + sourceOperands[0] + ", " + sourceOperands[1] + ", waiting" + waiting+
-                 ", Cycle: " + cycle);
+        //  System.out.println("Instruction issued: " + instruction.getOperation() +
+        //          ", Dest: R" + destinationOperand +
+        //          ", Sources Value: " + sourceOperands[0] + ", " + sourceOperands[1] + ", waiting" + waiting+
+        //          ", Cycle: " + cycle);
      } else {
          System.out.println("Reservation station is full. Cannot issue instruction.");
      }
@@ -149,7 +158,7 @@ public TomasuloSimulator sim = TomasuloSimulator.getInstance();
  public void calculateResult() {
     // Perform the operation based on the instruction type
     // Adjust this based on your specific instruction set
-    System.out.println("Executing instruction: " +this);
+    //System.out.println("Executing instruction: " +this);
     display.printExecutingReservationStation(this);
     switch (operation) {
         case "ADD":
@@ -181,11 +190,12 @@ public TomasuloSimulator sim = TomasuloSimulator.getInstance();
         case "LD":
         //set destination register with source address with is a register 
         //TODO use cache as address
-        registerFile.writeRegister(destinationOperand,sourceOperands[0], null);
+        registerFile.writeRegister(destinationOperand,memory.getData(sourceOperands[0]), null);
         break;
         case "SD":
         //store value sdValue in register indec
-       registerFile.writeRegister(destinationOperand, A, null);
+       memory.setData(destinationOperand, A);
+       memory.setData(destinationOperand, instructionReference.getSourceRegisters()[1]);
 
         break;
         case "BNEZ":

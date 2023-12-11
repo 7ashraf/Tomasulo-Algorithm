@@ -55,7 +55,8 @@ public class RegisterFile {
  }
 
 public boolean isFresh(int register) {
-	return registers.get(register).hold == 0;
+    
+	return registers.get(register) == null? true : registers.get(register).hold == 0;
 }
 
 public void holdRegister(int r, int tag) {

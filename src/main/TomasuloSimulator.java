@@ -24,12 +24,12 @@ public class TomasuloSimulator {
  public Hashtable <String, List<Instruction>> loopInstructions;
  private int cycle;
 
- private int addLatency;
- private int mulLatency;
- private int divLatency;
- private int loadLatency;
- private int storeLatency;
- private int branchLatency;
+ public int addLatency;
+ public int mulLatency;
+ public int divLatency;
+ public int loadLatency;
+ public int storeLatency;
+ public int branchLatency;
  public int addSubStationsCount = 3;
  public int mulDivStationsCount = 2;
  public int lSStaionsCount =3;
@@ -129,7 +129,7 @@ private Memory memory;
 			 // write back on this cycle and remove instruction and publish results to bus 
 			 // instruction is completed
 		 }else if(station.waiting == false && station.instructionReference.getState() == 2) {
-            System.out.println("Writing back Instruction " + station.instructionReference);
+            // System.out.println("Writing back Instruction " + station.instructionReference);
             display.printWritingBackInstruction(station.instructionReference);
 			 //store in destination register
 			 int destinationRegister = station.instructionReference.getDestinationRegister();
@@ -307,21 +307,21 @@ private void removeInstruction(String _key, ReservationStation station) {
         display.printRegisterFile(registerFile);
         display.printReservationStations(reservationStations);
         //display.printMemory(memory);
-	    System.out.println("Reservation Stations:");
-	    for (ReservationStation reservationStation : reservationStations) {
-	        System.out.println("Station " + reservationStations.indexOf(reservationStation) + ": " +
-	                "Busy: " + reservationStation.isBusy() +
-	                ", Operation: " + reservationStation.operation +
-	                ", Dest: R" + reservationStation.getDestinationOperand() +
-	                ", Sources Values: " + reservationStation.getSourceOperands()[0] +
-	                ", " + reservationStation.getSourceOperands()[1] +
-            ", waiting" + reservationStation.waiting);
-;
-	    }
-	    System.out.println("Register File:");
-	    for (int i = 0; i < registerFile.getRegisters().size(); i++) {
-	        System.out.println("R" + i + ": " +"hold: " + registerFile.getRegister(i).hold+ " value: " +registerFile.readRegister(i));
-	    }
+// 	    System.out.println("Reservation Stations:");
+// 	    for (ReservationStation reservationStation : reservationStations) {
+// 	        System.out.println("Station " + reservationStations.indexOf(reservationStation) + ": " +
+// 	                "Busy: " + reservationStation.isBusy() +
+// 	                ", Operation: " + reservationStation.operation +
+// 	                ", Dest: R" + reservationStation.getDestinationOperand() +
+// 	                ", Sources Values: " + reservationStation.getSourceOperands()[0] +
+// 	                ", " + reservationStation.getSourceOperands()[1] +
+//             ", waiting" + reservationStation.waiting);
+// ;
+// 	    }
+// 	    System.out.println("Register File:");
+// 	    for (int i = 0; i < registerFile.getRegisters().size(); i++) {
+// 	        System.out.println("R" + i + ": " +"hold: " + registerFile.getRegister(i).hold+ " value: " +registerFile.readRegister(i));
+// 	    }
 	    System.out.println("=======================================");
 	}
  
@@ -330,16 +330,21 @@ private void removeInstruction(String _key, ReservationStation station) {
 
      // Set up the simulator parameters
      System.out.print("Enter the number of registers: ");
-     //int numRegisters = scanner.nextInt();
-     int numRegisters = 15;
+     int numRegisters = scanner.nextInt();
+    //  int numRegisters = 15;
 
 
-     System.out.print("Enter the number of reservation stations: ");
-     //int numReservationStations = scanner.nextInt();
-     int numReservationStations = 10;
+     System.out.print("Enter the number of Add Sub reservation stations: ");
+     this.addSubStationsCount = scanner.nextInt();
+    System.out.print("Enter the number of Mul Div reservation stations: ");
+    this.mulDivStationsCount = scanner.nextInt();
+        System.out.print("Enter the number of load store reservation stations: ");
+    this.lSStaionsCount = scanner.nextInt();
+
+    //  int numReservationStations = 10;
 
      // Initialize the simulator with user-defined parameters
-     initializeSimulator(numRegisters, numReservationStations);
+     initializeSimulator(numRegisters, 0);
 
      // Set instruction latencies
      setInstructionLatencies(scanner);
@@ -362,34 +367,34 @@ private void removeInstruction(String _key, ReservationStation station) {
  }
  private void setInstructionLatencies(Scanner scanner) {
      System.out.print("Enter latency for ADD instruction: ");
-     //addLatency = scanner.nextInt();
-     addLatency = 1;
+     addLatency = scanner.nextInt();
+    //  addLatency = 1;
 
      System.out.print("Enter latency for MUL instruction: ");
-     //mulLatency = scanner.nextInt();
-     mulLatency = 1;
+     mulLatency = scanner.nextInt();
+    //  mulLatency = 1;
 
      System.out.print("Enter latency for DIV instruction: ");
-     //divLatency = scanner.nextInt();
-     divLatency = 1;
+     divLatency = scanner.nextInt();
+    //  divLatency = 1;
 
      System.out.print("Enter latency for LD instruction: ");
-     //loadLatency = scanner.nextInt();
-     loadLatency = 1;
+     loadLatency = scanner.nextInt();
+    //  loadLatency = 1;
 
      System.out.print("Enter latency for ST instruction: ");
-     //storeLatency = scanner.nextInt();
-     storeLatency = 1;
+     storeLatency = scanner.nextInt();
+    //  storeLatency = 1;
 
      System.out.print("Enter latency for BNEZ instruction: ");
-     //branchLatency = scanner.nextInt();
-     branchLatency = 1;
+     branchLatency = scanner.nextInt();
+    //  branchLatency = 1;
 
  }
  private void setStationBufferSizes(Scanner scanner) {
      System.out.print("Enter the size of all reservation stations: ");
-     //int stationSize = scanner.nextInt();
-     int stationSize = 2;
+     int stationSize = scanner.nextInt();
+    //  int stationSize = 2;
 
      // Adjust this based on your ReservationStation implementation
      for (ReservationStation reservationStation : reservationStations) {
